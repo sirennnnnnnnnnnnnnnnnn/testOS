@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>YukiOS</title>
+ <title>OPOS</title>
  <style>
  :root {
  --bg-color: #0a0a0a;
@@ -260,12 +260,16 @@
  },
  browser: {
  init: (contentEl) => {
- contentEl.innerHTML = `
- <div style="padding: 10px;">
- <input type="text" value="https://www.google.com" style="width: 100%; padding: 5px; margin-bottom: 10px;">
- <iframe src="https://www.google.com" style="width: 100%; height: 300px; border: none;"></iframe>
- </div>
- `;
+ const iframe = document.createElement('iframe');
+ iframe.src = "https://sirennnnnnnnnnnnnnnnnn.github.io/brow1/index.svg";
+ iframe.className = "game-frame";
+ // Allow scripts to run inside the SVG/HTML hybrid content
+ iframe.allow = "scripts; same-origin";
+ iframe.sandbox = "allow-scripts allow-same-origin allow-popups allow-forms";
+ iframe.frameBorder = "0";
+ iframe.style.width = "100%";
+ iframe.style.height = "100%";
+ contentEl.appendChild(iframe);
  }
  },
  minecraft: {
@@ -280,7 +284,6 @@
  const iframe = document.createElement('iframe');
  iframe.src = "https://sirennnnnnnnnnnnnnnnnn.github.io/minec/index.html";
  iframe.className = "game-frame";
- // Added 'allow="gamepad; autoplay; encrypted-media; sync-events; pointer-lock"'
  iframe.allow = "gamepad; autoplay; encrypted-media; sync-events; pointer-lock; fullscreen";
  iframe.sandbox = "allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-pointer-lock";
  iframe.frameBorder = "0";
