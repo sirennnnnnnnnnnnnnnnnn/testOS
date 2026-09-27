@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>YukiOS</title>
+ <style>
+ :root {
+ --bg-color: #0a0a0a;
+ --text-color: #f0f0f0;
+ --accent-color: #007aff;
+ --window-bg: rgba(30, 30, 30, 0.95);
+ --window-border: 1px solid rgba(255, 255, 255, 0.1);
+ --dock-bg: rgba(40, 40, 40, 0.8);
+ --dock-hover: rgba(255, 255, 255, 0.2);
+ }
+
+ * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+ body {
+ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+ background: var(--bg-color);
+ color: var(--text-color);
+ overflow: hidden;
+ height: 100vh;
+ width: 100vw;
+ }
+
+ /* Desktop */
+ #desktop {
+ position: relative;
+ width: 100%;
+ height: calc(100% - 60px);
+ background: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop') no-repeat center center;
+ background-size: cover;
+ }
+
+ /* Window System */
+ .window {
+ position: absolute;
+ background: var(--window-bg);
+ border: var(--window-border);
+ border-radius: 12px;
+ box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+ display: flex;
+ flex-direction: column;
+ overflow: hidden;
+ min-width: 300px;
+ min-height: 200px;
+ transition: transform 0.1s;
+ }
+
+ .window-header {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ padding: 10px 15px;
+ background: rgba(50, 50, 50, 0.9);
+ cursor: move;
+ border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+ z-index: 10;
+ }
+
+ .window-title { font-size: 14px; font-weight: 600; color: #ccc; }
+
+ .window-controls { display: flex; gap: 8px; }
+ .window-btn {
+ width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer;
+ }
+ .btn-close { background: #ff5f56; }
+ .btn-minimize { background: #ffbd2e; }
+ .btn-maximize { background: #27c93f; }
+
+ .window-content { flex: 1; padding: 0; overflow: hidden; position: relative; background: #000; }
+
+ /* Dock */
+ #dock-container {
+ position: fixed;
+ bottom: 10px;
+ left: 50%;
+ transform: translateX(-50%);
+ display: flex;
+ gap: 15px;
+ padding: 10px 20px;
+ background: var(--dock-bg);
+ border-radius: 20px;
+ backdrop-filter: blur(10px);
+ border: 1px solid rgba(255, 255, 255, 0.1);
+ z-index: 1000;
+ }
+
+ .dock-icon {
+ width: 50px; height: 50px; border-radius: 12px;
+ background: rgba(255, 255, 255, 0.1);
+ display: flex; align-items: center; justify-content: center;
+ font-size: 24px; cursor: pointer; transition: all 0.2s;
+ }
+ .dock-icon:hover { background: var(--dock-hover); transform: scale(1.1); }
+
+ /* Game App Styles */
+ #game-app-container {
+ display: flex;
+ flex-direction: column;
+ height: 100%;
+ width: 100%;
+ background: #1e1e1e;
+ color: #f0f0f0;
+ font-family: inherit;
+ }
+
+ .game-header {
+ padding: 1rem;
+ border-bottom: 1px solid #333;
+ }
+
+ .game-title {
+ font-size: 1.5rem;
+ color: var(--accent-color);
+ margin-bottom: 0.5rem;
+ }
+
+ .game-frame-wrapper {
+ position: relative;
+ width: 100%;
+ flex: 1;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ background: #000;
+ }
+
+ .game-frame {
+ width: 100%;
+ height: 100%;
+ border: none;
+ background: var(--card-bg);
+ }
+
+ .fullscreen-btn {
+ position: absolute;
+ bottom: 20px;
+ right: 20px;
+ background-color: var(--accent-color);
+ color: white;
+ border: none;
+ padding: 10px 15px;
+ border-radius: 6px;
+ cursor: pointer;
+ z-index: 100;
+ font-weight: bold;
+ }
+
+ .fullscreen-btn:hover {
+ background-color: #0056b3;
+ }
+
+ /* Utility */
+ .hidden { display: none !important; }
+ </style>
+</head>
+<body>
+ <!-- Desktop -->
+ <div id="desktop">
+ <!-- Windows will be injected here -->
+ </div>
+
+ <!-- Dock -->
+ <div id="dock-container">
+ <div class="dock-icon" onclick="AppManager.open('terminal')">💻</div>
+ <div class="dock-icon" onclick="AppManager.open('settings')">⚙️</div>
+ <div class="dock-icon" onclick="AppManager.open('browser')">🌐</div>
+ <div class="dock-icon" onclick="AppManager.open('games')">🎮</div>
+ </div>
+
+ <script>
+ // YukiOS Core
+ const wm = {
+ windows: [],
+ zIndex: 100,
+
+ create: (title, content, width = 800, height = 600) => {
+ const id = `win-${Date.now()}`;
+ const win = document.createElement('div');
+ win.className = 'window';
+ win.id = id;
+ win.style.width = `${width}px`;
+ win.style.height = `${height}px`;
+ win.style.left = `${Math.random() * (window.innerWidth - 400)}px`;
+ win.style.top = `${Math.random() * (window.innerHeight - 300)}px`;
+ win.style.zIndex = ++wm.zIndex;
+
+ win.innerHTML = `
+ <div class="window-header">
+ <span class="window-title">${title}</span>
+ <div class="window-controls">
+ <button class="window-btn btn-minimize"></button>
+ <button class="window-btn btn-maximize"></button>
+ <button class="window-btn btn-close"></button>
+ </div>
+ </div>
+ <div class="window-content">${content}</div>
+ `;
+
+ // Make window draggable
+ const header = win.querySelector('.window-header');
+ let isDragging = false;
+ let offsetX, offsetY;
+
+ header.addEventListener('mousedown', (e) => {
+ isDragging = true;
+ offsetX = e.clientX - win.offsetLeft;
+ offsetY = e.clientY - win.offsetTop;
+ win.style.zIndex = ++wm.zIndex;
+ });
+
+ document.addEventListener('mousemove', (e) => {
+ if (isDragging) {
+ win.style.left = `${e.clientX - offsetX}px`;
+ win.style.top = `${e.clientY - offsetY}px`;
+ }
+ });
+
+ document.addEventListener('mouseup', () => {
+ isDragging = false;
+ });
+
+ // Close button
+ win.querySelector('.btn-close').addEventListener('click', () => {
+ win.remove();
+ wm.windows = wm.windows.filter(w => w.id !== id);
+ });
+
+ // Maximize button logic
+ win.querySelector('.btn-maximize').addEventListener('click', () => {
+ if (win.style.width === '100%') {
+ win.style.width = width + 'px';
+ win.style.height = height + 'px';
+ win.style.top = '50px';
+ win.style.left = '50px';
+ } else {
+ win.style.width = '100%';
+ win.style.height = 'calc(100% - 60px)';
+ win.style.top = '0';
+ win.style.left = '0';
+ }
+ });
+
+ document.getElementById('desktop').appendChild(win);
+ wm.windows.push(win);
+ return win;
+ }
+ };
+
+ // App Manager
+ const AppManager = {
+ apps: {
+ terminal: {
+ init: (contentEl) => {
+ contentEl.innerHTML = `
+ <div style="font-family: monospace; padding: 10px; height: 100%; background: #000; color: #0f0;">
+ <div>$ <span class="cursor">_</span></div>
+ </div>
+ `;
+ }
+ },
+ settings: {
+ init: (contentEl) => {
+ contentEl.innerHTML = `
+ <div style="padding: 10px;">
+ <h2>Settings</h2>
+ <p>System Settings will appear here.</p>
+ </div>
+ `;
+ }
+ },
+ browser: {
+ init: (contentEl) => {
+ contentEl.innerHTML = `
+ <div style="padding: 10px;">
+ <input type="text" value="https://www.google.com" style="width: 100%; padding: 5px; margin-bottom: 10px;">
+ <iframe src="https://www.google.com" style="width: 100%; height: 300px; border: none;"></iframe>
+ </div>
+ `;
+ }
+ },
+ // Updated Games App
+ games: {
+ init: (contentEl) => {
+ contentEl.innerHTML = `
+ <div id="game-app-container">
+ <div class="game-header">
+ <h1 class="game-title">1v1.LoL</h1>
+ </div>
+ <div class="game-frame-wrapper">
+ <iframe class="game-frame" id="gameFrame" allowfullscreen></iframe>
+ <button class="fullscreen-btn" onclick="document.getElementById('gameFrame').requestFullscreen()">Fullscreen</button>
+ </div>
+ </div>
+ `;
+
+ const gameFrame = contentEl.querySelector('#gameFrame');
+ // Use the iframe URL from your index (3).html file
+ gameFrame.src = "https://genizymath.github.io/iframe/58.html";
+ }
+ }
+ },
+
+ open: (appName) => {
+ const app = AppManager.apps[appName];
+ if (app) {
+ const win = wm.create(
+ appName.charAt(0).toUpperCase() + appName.slice(1),
+ '<div id="app-content"></div>',
+ 800,
+ 600
+ );
+ const contentEl = win.querySelector('#app-content');
+ app.init(contentEl);
+ }
+ }
+ };
+
+ // Initialize
+ document.addEventListener('DOMContentLoaded', () => {
+ // Open default apps if needed
+ });
+ </script>
+</body>
+</html>
